@@ -164,6 +164,7 @@
   button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;width:100%}
   button.primary:hover{background:var(--accent2)}
   button.wide{width:100%;margin-top:6px}
+  .shareBox{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.5}
   button:disabled{opacity:.45;cursor:not-allowed}
   .note{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px}
   .chk{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:13px;margin-top:8px}
@@ -175,6 +176,10 @@
   #filters summary::before{content:"▸";color:var(--muted);transition:.15s}
   #filters details[open] summary::before{transform:rotate(90deg)}
   #filters summary small{color:var(--muted);font-weight:400}
+  #filters .grpAct{margin-left:auto;display:flex;gap:2px}
+  #filters .grpAct span{width:28px;height:28px;display:grid;place-items:center;border-radius:7px;color:var(--muted)}
+  #filters .grpAct span:hover{color:var(--text);background:#2a2f3b} #filters .grpAct .del:hover{color:var(--err)}
+  #filters .grpAct svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:4px 0 8px}
   .tile{padding:3px;display:flex;flex-direction:column;gap:3px;align-items:stretch;border-radius:8px;font-size:11.5px;line-height:1.2;min-width:0}
   .tile canvas{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:5px;background:#30343f;display:block}
@@ -559,6 +564,7 @@
           <div class="row amtRow" id="amtRow"><span>Độ áp màu</span><input type="range" id="filterAmt" min="0" max="100" value="100"><output></output></div>
         </div>
         <button class="wide" id="cubeBtn">Nhập màu (.cube, .xmp)</button>
+        <div id="shareBox" class="shareBox" hidden><div id="shareTxt"></div><button class="wide" id="shareBtn"></button></div>
       </div>
       <div class="pane" data-pane="info">
         <div class="about">
@@ -3787,8 +3793,8 @@ function setLip(idx, silent) {
 // Bộ màu
 function groupRank(g) {
   if (g === 'Màu của tôi') return -3;
-  if (g.startsWith('B612 chọn')) return -2;
-  if (g.startsWith('Black Pixel')) return -1;
+  if (g === 'B612') return -5;
+  if (g === 'Black Pixel') return -4;
   const i = GROUP_ORDER.indexOf(g); return i < 0 ? 999 : 100 + i;
 }
 function buildFilterButtons() {
@@ -3801,13 +3807,27 @@ function buildFilterButtons() {
   if (filterKey === 'none') none.classList.add('on');
   none.addEventListener('click', () => { setFilter('none'); markEdited(); });
   top.appendChild(none); box.appendChild(top);
-  const order = Object.keys(groups).sort((a, b) => groupRank(a) - groupRank(b) || a.localeCompare(b, 'vi'));
+  const userG = new Set(); const me = window.shareApi && window.shareApi.uid;
+  for (const f of Object.values(FILTERS)) if (f.user || (f.shared && me && f.ownerUid === me)) userG.add(f.group);
+  const rk = g => (g === 'B612' || g === 'Black Pixel') ? groupRank(g) : userG.has(g) ? -3 : groupRank(g);
+  const order = Object.keys(groups).sort((a, b) => rk(a) - rk(b) || a.localeCompare(b, 'vi'));
   const curGroup = FILTERS[filterKey] && FILTERS[filterKey].group;
   for (const g of order) {
     const det = document.createElement('details');
     if (g === curGroup) det.open = true;
     const sum = document.createElement('summary');
-    sum.innerHTML = `${g} <small>${groups[g].length}</small>`;
+    const gl = document.createElement('span'); gl.textContent = g;
+    const gs = document.createElement('small'); gs.textContent = groups[g].length;
+    sum.append(gl, gs);
+    if (userG.has(g)) {
+      const act = document.createElement('span'); act.className = 'grpAct';
+      const mk = (cls, title, svg, fn) => { const b = document.createElement('span'); b.className = cls; b.title = title; b.innerHTML = svg;
+        b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); fn(g); }); return b; };
+      act.append(
+        mk('ren', 'Đổi tên nhóm', '<svg viewBox="0 0 24 24"><path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19z"/><path d="M14.5 6.5l3 3"/></svg>', renameColorGroup),
+        mk('del', 'Xóa nhóm', '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>', deleteColorGroup));
+      sum.appendChild(act);
+    }
     det.appendChild(sum);
     const tiles = document.createElement('div'); tiles.className = 'tiles';
     for (const [k, name] of groups[g]) {
@@ -3837,22 +3857,202 @@ function setFilter(key, silent) {
   dirtyLut = true;
   if (!silent) requestRender();
 }
+// ----- Màu nhập vào được tự lưu trong trình duyệt (IndexedDB), mở lại vẫn còn -----
+function colOpen() {
+  return new Promise((res, rej) => {
+    if (!window.indexedDB) return rej(new Error('no idb'));
+    const q = indexedDB.open('photoai_colors', 2);
+    q.onupgradeneeded = () => { for (const n of ['colors', 'shared']) if (!q.result.objectStoreNames.contains(n)) q.result.createObjectStore(n, { keyPath: n === 'colors' ? 'key' : 'id' }); };
+    q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+  });
+}
+async function colTx(mode, fn, store = 'colors') {
+  const db = await colOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, mode); const out = fn(tx.objectStore(store));
+    tx.oncomplete = () => { db.close(); res(out && out.result); };
+    tx.onerror = tx.onabort = () => { db.close(); rej(tx.error); };
+  });
+}
+async function colPut(recs) { try { await colTx('readwrite', st => { recs.forEach(r => st.put(r)); }); return true; } catch (e) { return false; } }
+async function colDel(keys) { try { await colTx('readwrite', st => { keys.forEach(k => st.delete(k)); }); return true; } catch (e) { return false; } }
+async function restoreColors() {
+  let all = []; try { all = await colTx('readonly', st => st.getAll()) || []; } catch (e) { return; }
+  let n = 0;
+  for (const r of all) {
+    try {
+      const F = r.kind === 'cube' ? { cube: parseCube(r.text) } : parseLrPreset(r.text, r.name);
+      F.group = r.group; F.name = r.name; F.user = true; FILTERS[r.key] = F; n++;
+    } catch (e) {}
+  }
+  if (n) buildFilterButtons();
+}
+const shMine = g => (window.shareApi && window.shareApi.mineKeys) ? window.shareApi.mineKeys(g) : [];
+async function renameColorGroup(g) {
+  const nn = (prompt('Đổi tên nhóm màu:', g) || '').trim().slice(0, 40);
+  if (!nn || nn === g) return;
+  const keys = [], sh = shMine(g);
+  for (const [k, f] of Object.entries(FILTERS)) if (f.user && f.group === g) { f.group = nn; keys.push(k); }
+  if (!keys.length && !sh.length) return;
+  buildFilterButtons();
+  if (keys.length) try { const all = await colTx('readonly', st => st.getAll()) || []; await colPut(all.filter(r => keys.includes(r.key)).map(r => ({ ...r, group: nn }))); } catch (e) {}
+  if (sh.length) try { await window.shareApi.rename(sh.map(k => k.slice(3)), nn); } catch (e) { alert('Không đổi được tên trên máy chủ: ' + e.message); }
+}
+async function deleteColorGroup(g) {
+  const keys = Object.keys(FILTERS).filter(k => FILTERS[k].user && FILTERS[k].group === g), sh = shMine(g);
+  if (!keys.length && !sh.length) return;
+  const msg = 'Xóa ' + (keys.length + sh.length) + ' màu của bạn trong nhóm "' + g + '"?' + (sh.length ? '\n(' + sh.length + ' màu đã chia sẻ sẽ bị xóa khỏi máy chủ; màu người khác thêm không bị ảnh hưởng)' : '');
+  if (!confirm(msg)) return;
+  const wasCur = keys.includes(filterKey) || sh.includes(filterKey);
+  keys.forEach(k => delete FILTERS[k]);
+  if (keys.length) await colDel(keys);
+  if (sh.length) {
+    try { await window.shareApi.remove(sh.map(k => k.slice(3))); sh.forEach(k => delete FILTERS[k]); }
+    catch (e) { alert('Không xóa được trên máy chủ: ' + e.message); }
+  }
+  buildFilterButtons();
+  if (wasCur && !FILTERS[filterKey]) { setFilter('none'); markEdited(); }
+}
 $('#cubeBtn').addEventListener('click', () => $('#cubeFile').click());
 $('#cubeFile').addEventListener('change', async e => {
-  let added = 0;
+  let added = 0; const recs = [], shareRecs = [], sa = window.shareApi, sharing = !!(sa && sa.uid && sa.upload);
   for (const f of e.target.files) {
     try {
       const text = await f.text(), base = f.name.replace(/\.(cube|xmp|lrtemplate)$/i, '');
-      const key = 'my_' + f.name.replace(/\W+/g, '_');
-      if (/\.cube$/i.test(f.name)) FILTERS[key] = { group: 'Màu của tôi', name: base, cube: parseCube(text) };
+      const key = 'my_' + f.name.replace(/\W+/g, '_'), isCube = /\.cube$/i.test(f.name);
+      const prev = FILTERS[key] && FILTERS[key].user ? FILTERS[key].group : null;
+      let F;
+      if (isCube) F = { group: 'Màu của tôi', name: base, cube: parseCube(text) };
       else { const nm = (text.match(/crs:Name="([^"]+)"/) || text.match(/<rdf:li xml:lang="x-default">([^<]+)</) || text.match(/title\s*=\s*"([^"]+)"/) || [])[1] || base;
-        FILTERS[key] = parseLrPreset(text, nm); }
+        F = parseLrPreset(text, nm); }
+      if (sharing) {   // đã đăng nhập Google: đăng thẳng lên máy chủ chung
+        if (Object.values(FILTERS).some(x => x.shared && x.ownerUid === sa.uid && x.name === F.name && x.group === 'Màu của tôi')) continue;
+        shareRecs.push({ kind: isCube ? 'cube' : 'lr', text, name: F.name, group: 'Màu của tôi' }); continue;
+      }
+      if (prev) F.group = prev;
+      F.user = true; FILTERS[key] = F;
+      recs.push({ key, kind: isCube ? 'cube' : 'lr', text, name: F.name, group: F.group });
       added++; filterKey = key;
     } catch (err) { alert(f.name + ': ' + err.message); }
   }
   e.target.value = '';
-  if (added) { buildFilterButtons(); setFilter(filterKey); markEdited(); }
+  if (added) {
+    buildFilterButtons(); setFilter(filterKey); markEdited();
+    const ok = await colPut(recs);
+    $('#info').textContent = ok ? `Đã nhập và tự lưu ${added} màu` : `Đã nhập ${added} màu, nhưng trình duyệt không cho lưu lâu dài (chế độ ẩn danh?)`;
+  }
+  if (shareRecs.length) {
+    $('#info').textContent = 'Đang đăng màu lên máy chủ chung…';
+    try {
+      const ids = await sa.upload(shareRecs);
+      if (ids.length && await sa.waitFor(ids[0])) { setFilter('sh_' + ids[0]); markEdited(); }
+      $('#info').textContent = `Đã đăng ${ids.length} màu lên máy chủ chung`;
+    } catch (err) { alert('Không đăng được lên máy chủ: ' + err.message); }
+  }
 });
+restoreColors();
+
+/* ===== Chia sẻ màu qua Firebase (đăng nhập Google) =====
+   Điền cấu hình dự án Firebase của bạn vào FIREBASE_CONFIG. Để trống = tắt tính năng, phần mềm chạy như cũ. */
+const FIREBASE_CONFIG = { apiKey: 'AIzaSyAIo9qCVRGQKuGHCm62_gej6b8pNi5WEEU', authDomain: 'photo-ai-f1540.firebaseapp.com', projectId: 'photo-ai-f1540', appId: '1:707466289570:web:65472672eecfa4fb85d2fb' };
+const ADMIN_UID = '';   // UID Google của quản trị (hiện trong tab Bộ lọc sau khi đăng nhập) — được thêm không giới hạn
+const MAX_PER_USER = 100;   // người thường tối đa 100 màu (cũng phải khớp quy tắc trong firestore.rules)
+window.shareApi = { uid: null, name: '', mineKeys(g) { return Object.keys(FILTERS).filter(k => FILTERS[k].shared && this.uid && FILTERS[k].ownerUid === this.uid && FILTERS[k].group === g); } };
+(async () => {
+  if (!FIREBASE_CONFIG.apiKey) return;
+  const api = window.shareApi, base = 'https://www.gstatic.com/firebasejs/10.14.1/';
+  let A, Au, Fs;
+  try { [A, Au, Fs] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]); } catch (e) { console.warn('Firebase không tải được', e); return; }
+  const app = A.initializeApp(FIREBASE_CONFIG), auth = Au.getAuth(app), db = Fs.getFirestore(app);
+  const b64 = u8 => { let t = ''; for (let i = 0; i < u8.length; i += 0x8000) t += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(t); };
+  const unb64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
+  async function gzText(text) {
+    const raw = new TextEncoder().encode(text);
+    if (typeof CompressionStream === 'undefined') return { enc: 'raw', data: b64(raw) };
+    return { enc: 'gz', data: b64(new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer())) };
+  }
+  async function ungzText(enc, data) {
+    const u = unb64(data);
+    if (enc !== 'gz') return new TextDecoder().decode(u);
+    return await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  }
+  let lastMeta = [];
+  // --- giao diện đăng nhập
+  const box = $('#shareBox'), txt = $('#shareTxt'), btn = $('#shareBtn'); box.hidden = false;
+  const ui = () => {
+    if (api.uid) { const adm = ADMIN_UID && api.uid === ADMIN_UID, n = lastMeta.filter(m => m.ownerUid === api.uid).length;
+      txt.textContent = 'Đã đăng nhập: ' + (api.name || 'Google') + '. Màu bạn nhập sẽ tự đăng lên máy chủ chung; bạn chỉ sửa tên nhóm hoặc xóa được màu do mình thêm. Đã thêm ' + n + (adm ? ' màu (quản trị: không giới hạn).' : '/' + MAX_PER_USER + ' màu.') + ' Mã tài khoản (UID): ' + api.uid; btn.textContent = 'Đăng xuất'; }
+    else { txt.textContent = 'Màu dùng chung từ mọi người đã được tải về. Đăng nhập Google để màu bạn nhập tự đồng bộ lên máy chủ chung (chỉ người thêm mới sửa/xóa được).'; btn.textContent = 'Đăng nhập Google'; }
+  };
+  btn.addEventListener('click', async () => {
+    try { if (api.uid) await Au.signOut(auth); else await Au.signInWithPopup(auth, new Au.GoogleAuthProvider()); }
+    catch (e) { if (!/popup-closed|cancelled/.test(e.code || '')) alert('Không đăng nhập được: ' + (e.message || e)); }
+  });
+  Au.onAuthStateChanged(auth, u => { api.uid = u ? u.uid : null; api.name = u ? (u.displayName || u.email || '') : ''; ui(); buildFilterButtons(); });
+  // --- nạp màu chung vào danh sách bộ lọc
+  const shCache = new Map(); let shSig = '';
+  function applyShared(list) {
+    const sig = list.map(r => [r.id, r.group, r.name, r.text.length].join('|')).join(';');
+    if (sig === shSig) return; shSig = sig;
+    const ids = new Set(list.map(r => r.id));
+    for (const k of Object.keys(FILTERS)) if (k.startsWith('sh_') && !ids.has(k.slice(3))) delete FILTERS[k];
+    for (const r of list) {
+      let F = shCache.get(r.id);
+      if (!F || F._len !== r.text.length) {
+        try { F = r.kind === 'cube' ? { cube: parseCube(r.text) } : parseLrPreset(r.text, r.name); } catch (e) { continue; }
+        F._len = r.text.length; shCache.set(r.id, F);
+      }
+      F.group = r.group; F.name = r.name; F.shared = true; F.ownerUid = r.ownerUid; F.ownerName = r.ownerName || ''; FILTERS['sh_' + r.id] = F;
+    }
+    if (String(filterKey).startsWith('sh_') && !FILTERS[filterKey]) setFilter('none');
+    buildFilterButtons();
+  }
+  let syncing = false, again = false;
+  async function syncShared() {
+    if (syncing) { again = true; return; } syncing = true;
+    try {
+      do {
+        again = false;
+        let cache = []; try { cache = await colTx('readonly', st => st.getAll(), 'shared') || []; } catch (e) {}
+        const have = new Map(cache.map(r => [r.id, r])), mids = new Set(lastMeta.map(m => m.id)), list = [];
+        for (const m of lastMeta.filter(m => !m.pending)) {
+          let t = have.get(m.id) && have.get(m.id).text;
+          if (!t) { try { const d = await Fs.getDoc(Fs.doc(db, 'sharedColorData', m.id)); if (!d.exists()) continue; const x = d.data(); t = await ungzText(x.enc, x.data); } catch (e) { continue; } }
+          list.push({ id: m.id, text: t, name: m.name, group: m.group, kind: m.kind, ownerUid: m.ownerUid, ownerName: m.ownerName || '' });
+        }
+        applyShared(list);
+        try { await colTx('readwrite', st => { list.forEach(r => st.put(r)); for (const id of have.keys()) if (!mids.has(id)) st.delete(id); }, 'shared'); } catch (e) {}
+      } while (again);
+    } finally { syncing = false; }
+  }
+  try { const c = await colTx('readonly', st => st.getAll(), 'shared'); if (c && c.length) applyShared(c); } catch (e) {}   // hiện ngay từ bộ nhớ đệm
+  Fs.onSnapshot(Fs.collection(db, 'sharedColors'), { includeMetadataChanges: true }, snap => {
+    lastMeta = snap.docs.map(d => ({ id: d.id, ...d.data(), pending: d.metadata.hasPendingWrites })); syncShared(); ui();
+  }, err => console.warn('Không đọc được màu chung', err));
+  // --- thêm / đổi tên nhóm / xóa (máy chủ chỉ cho phép với màu của chính mình)
+  api.upload = async recs => {
+    const ids = [], adm = ADMIN_UID && api.uid === ADMIN_UID, used = new Set(lastMeta.map(m => m.id)); let slot = 0;
+    for (const r of recs) {
+      let id;
+      if (adm) id = Fs.doc(Fs.collection(db, 'sharedColors')).id;
+      else {   // mỗi người có sẵn 100 ô: <uid>_0 … <uid>_99; máy chủ không cho tạo ngoài các ô này
+        while (slot < MAX_PER_USER && used.has(api.uid + '_' + slot)) slot++;
+        if (slot >= MAX_PER_USER) { alert('Bạn đã thêm đủ ' + MAX_PER_USER + ' màu. Hãy xóa bớt màu cũ rồi thêm tiếp.'); break; }
+        id = api.uid + '_' + slot; used.add(id);
+      }
+      const z = await gzText(r.text);
+      if (z.data.length > 880000) { alert('"' + r.name + '" quá lớn để chia sẻ (giới hạn khoảng 0,9 MB sau nén).'); continue; }
+      const ref = Fs.doc(db, 'sharedColors', id), bt = Fs.writeBatch(db);
+      bt.set(ref, { name: r.name.slice(0, 80), group: r.group.slice(0, 40), kind: r.kind, size: r.text.length, ownerUid: api.uid, ownerName: (api.name || '').slice(0, 60), createdAt: Fs.serverTimestamp() });
+      bt.set(Fs.doc(db, 'sharedColorData', ref.id), { data: z.data, enc: z.enc, ownerUid: api.uid });
+      await bt.commit(); ids.push(ref.id);
+    }
+    return ids;
+  };
+  api.rename = async (ids, group) => { const bt = Fs.writeBatch(db); ids.forEach(id => bt.update(Fs.doc(db, 'sharedColors', id), { group })); await bt.commit(); };
+  api.remove = async ids => { const bt = Fs.writeBatch(db); ids.forEach(id => { bt.delete(Fs.doc(db, 'sharedColors', id)); bt.delete(Fs.doc(db, 'sharedColorData', id)); }); await bt.commit(); };
+  api.waitFor = (id, ms = 12000) => new Promise(res => { const t0 = Date.now(); const iv = setInterval(() => { if (FILTERS['sh_' + id] || Date.now() - t0 > ms) { clearInterval(iv); res(!!FILTERS['sh_' + id]); } }, 200); });
+})();
 document.querySelectorAll('#viewModes button').forEach(b => b.addEventListener('click', () => {
   viewMode = b.dataset.vm;
   document.querySelectorAll('#viewModes button').forEach(x => x.classList.toggle('on', x === b));
