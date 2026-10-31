@@ -3955,7 +3955,7 @@ restoreColors();
 /* ===== Chia sẻ màu qua Firebase (đăng nhập Google) =====
    Điền cấu hình dự án Firebase của bạn vào FIREBASE_CONFIG. Để trống = tắt tính năng, phần mềm chạy như cũ. */
 const FIREBASE_CONFIG = { apiKey: 'AIzaSyAIo9qCVRGQKuGHCm62_gej6b8pNi5WEEU', authDomain: 'photo-ai-f1540.firebaseapp.com', projectId: 'photo-ai-f1540', appId: '1:707466289570:web:65472672eecfa4fb85d2fb' };
-const ADMIN_UID = '';   // UID Google của quản trị (hiện trong tab Bộ lọc sau khi đăng nhập) — được thêm không giới hạn
+const ADMIN_UID = 'KfT2LsLyXzPeL11tcshasyRESqi2';   // UID Google của quản trị (hiện trong tab Bộ lọc sau khi đăng nhập) — được thêm không giới hạn
 const MAX_PER_USER = 100;   // người thường tối đa 100 màu (cũng phải khớp quy tắc trong firestore.rules)
 window.shareApi = { uid: null, name: '', mineKeys(g) { return Object.keys(FILTERS).filter(k => FILTERS[k].shared && this.uid && FILTERS[k].ownerUid === this.uid && FILTERS[k].group === g); } };
 (async () => {
