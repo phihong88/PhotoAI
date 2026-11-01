@@ -24,6 +24,33 @@
   header h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.2px}
   header h1 span{color:var(--accent2)}
   .aiBox{display:inline-block;color:var(--accent2);border:1.5px solid var(--accent);border-radius:.32em;padding:0 .26em;margin-left:.1em;line-height:1.1;background:#1b1e25}
+
+  /* ---- Nhóm chức năng thu gọn / xổ ra ---- */
+  .sec>h3{cursor:pointer;user-select:none}
+  .sec>h3::before{content:'';flex:none;width:6px;height:6px;margin:0 10px 2px 2px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s;opacity:.85}
+  .sec.open>h3::before{transform:rotate(45deg);margin-bottom:4px}
+  .sec.collapsed>h3{margin-bottom:0}
+  .sec.collapsed>:not(h3){display:none!important}
+  /* ---- Cắt ảnh + chỉnh độ nghiêng ---- */
+  #cropStage{position:absolute;inset:0;z-index:5;background:#0d0f13;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+  #cropImg{position:absolute;left:0;top:0;transform-origin:50% 50%;pointer-events:none}
+  #cropFrame{position:absolute;outline:1.5px solid #fff;box-shadow:0 0 0 4000px rgba(0,0,0,.58);cursor:move;touch-action:none;
+    background:linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,.42)) 33.33% 0/1px 100% no-repeat,linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,.42)) 66.66% 0/1px 100% no-repeat,
+      linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,.42)) 0 33.33%/100% 1px no-repeat,linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,.42)) 0 66.66%/100% 1px no-repeat}
+  .cph{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;touch-action:none;display:grid;place-items:center}
+  .cph::after{content:'';width:11px;height:11px;background:#fff;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
+  .cph[data-h=nw]{left:0;top:0;cursor:nwse-resize}.cph[data-h=n]{left:50%;top:0;cursor:ns-resize}.cph[data-h=ne]{left:100%;top:0;cursor:nesw-resize}
+  .cph[data-h=e]{left:100%;top:50%;cursor:ew-resize}.cph[data-h=se]{left:100%;top:100%;cursor:nwse-resize}.cph[data-h=s]{left:50%;top:100%;cursor:ns-resize}
+  .cph[data-h=sw]{left:0;top:100%;cursor:nesw-resize}.cph[data-h=w]{left:0;top:50%;cursor:ew-resize}
+  #cropStage.locked .cph[data-h=n],#cropStage.locked .cph[data-h=e],#cropStage.locked .cph[data-h=s],#cropStage.locked .cph[data-h=w]{display:none}
+  #cropPanel{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:7;width:min(560px,calc(100% - 16px));background:rgba(20,22,28,.96);border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:7px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+  #cropPanel[hidden]{display:none}
+  #cropPanel .cpRow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  #cropPanel .cpRow button{padding:6px 10px;font-size:13px}
+  #cropPanel .cpRow button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  #cropPanel .cpAng{flex:1;min-width:120px}
+  #cropPanel output{min-width:44px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px}
+  #canvasWrap.cropping #cmpTools,#canvasWrap.cropping #histTools{display:none!important}
   #fsBtn{display:none;margin-left:auto;width:30px;height:28px;margin-top:-3px;margin-bottom:-3px;padding:0;place-items:center;border-radius:7px}
   #fsBtn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
   #fsBtn + #status{margin-left:0}
@@ -233,6 +260,18 @@
       <canvas id="paint"></canvas>
       <div id="brush"></div>
       <div id="splitHandle"><div class="grip"></div><span class="lb l">Gốc</span><span class="lb r">Sau</span><div class="knob">⇔</div></div>
+      <div id="cropStage" hidden>
+        <canvas id="cropImg"></canvas>
+        <div id="cropFrame"><i class="cph" data-h="nw"></i><i class="cph" data-h="n"></i><i class="cph" data-h="ne"></i><i class="cph" data-h="e"></i><i class="cph" data-h="se"></i><i class="cph" data-h="s"></i><i class="cph" data-h="sw"></i><i class="cph" data-h="w"></i></div>
+      </div>
+      <div id="cropPanel" hidden>
+        <div class="cpRow" id="cpAspect">
+          <button data-r="free" class="on">Tự do</button><button data-r="orig">Gốc</button><button data-r="1">1:1</button><button data-r="1.3333">4:3</button><button data-r="0.75">3:4</button><button data-r="1.7778">16:9</button><button data-r="0.5625">9:16</button>
+        </div>
+        <div class="cpRow"><span>Độ nghiêng</span><input class="cpAng" type="range" id="cpAngle" min="-45" max="45" step="0.1" value="0"><output id="cpAngleOut">0.0°</output><button id="cpAng0" title="Về 0°">0°</button></div>
+        <div class="cpRow"><button id="cpRotL" title="Xoay trái 90°">↺ 90°</button><button id="cpRotR" title="Xoay phải 90°">↻ 90°</button><button id="cpRestore" hidden title="Quay về ảnh gốc chưa cắt">Khôi phục ảnh gốc</button>
+          <span style="flex:1"></span><button id="cpCancel">Hủy</button><button class="primary" id="cpApply">Áp dụng</button></div>
+      </div>
       <div id="histTools">
         <button class="ibtn" id="undoHistBtn" title="Hoàn tác (Ctrl+Z)">
           <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
@@ -257,6 +296,7 @@
       <button class="zbtn" id="zoomIn" title="Phóng to">+</button>
       <button class="zbtn" id="zoomFit" title="Vừa khung">Vừa khung</button>
       <button class="zbtn" id="zoom100" title="100%">1:1</button>
+      <button class="zbtn" id="cropBtn" title="Cắt ảnh và chỉnh độ nghiêng">✂ Cắt ảnh</button>
       <button class="zbtn" id="selAllBtn" hidden>Chọn tất cả</button>
       <button class="zbtn" id="pasteBtn" hidden title="Áp cài đặt">Áp cài đặt ảnh này</button>
       <span id="info"></span>
@@ -1758,7 +1798,8 @@ function getBitmap(it) {
 function putBitmap(it, bm) {
   bmCache.push({ it, bm });
   while (bmCache.length > BM_MAX) {
-    const k = bmCache.findIndex(x => x.it !== it && x.it !== S.item);
+    let k = bmCache.findIndex(x => x.it !== it && x.it !== S.item && !x.it.edited);   // ưu tiên bỏ ảnh chưa chỉnh
+    if (k < 0) k = bmCache.findIndex(x => x.it !== it && x.it !== S.item);
     if (k < 0) break;
     bmCache.splice(k, 1)[0].bm.close();
   }
@@ -1766,7 +1807,12 @@ function putBitmap(it, bm) {
 function touchAI(it) {
   const k = aiOrder.indexOf(it); if (k >= 0) aiOrder.splice(k, 1);
   aiOrder.push(it);
-  while (aiOrder.length > AI_MAX) { const o = aiOrder.shift(); if (o !== S.item) o.ai = null; }
+  while (aiOrder.length > AI_MAX) {   // giữ kết quả AI của ảnh đã chỉnh lâu hơn để quay lại không phải phân tích lại
+    let k = aiOrder.findIndex(o => o !== S.item && !o.edited);
+    if (k < 0) { if (aiOrder.length <= AI_MAX + 4) break; k = aiOrder.findIndex(o => o !== S.item); }
+    if (k < 0) break;
+    aiOrder.splice(k, 1)[0].ai = null;
+  }
 }
 const AI_KEYS = ['cloth', 'even', 'smooth', 'bright', 'eyes', 'eyeBig', 'slim', 'lipAmt', 'lipSat', 'teeth', 'skinTone', 'evenB', 'smoothB', 'brightB', 'dodge', 'burn', 'dodgeB', 'burnB',
   'chin', 'faceW', 'nose', 'waist', 'arm', 'leg', 'blushAmt', 'shadowAmt', 'browF', 'browM', 'lipNatM', 'oilM'];
@@ -3242,31 +3288,62 @@ async function exportSmart() {
   if (!sel.length || (sel.length === 1 && sel[0] === items[cur])) return exportOne();
   return exportAll(sel);
 }
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+async function makeZip(files) {   // gói ZIP không nén (ảnh JPEG vốn đã nén), tạo ngay trong trình duyệt
+  const enc = new TextEncoder(), parts = [], cen = [], d = new Date(); let off = 0, cenSize = 0;
+  const dt = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate(), tm = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  for (const f of files) {
+    const nm = enc.encode(f.name), buf = new Uint8Array(await f.blob.arrayBuffer()), crc = crc32(buf), size = buf.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, tm, true); lh.setUint16(12, dt, true); lh.setUint32(14, crc, true); lh.setUint32(18, size, true); lh.setUint32(22, size, true);
+    lh.setUint16(26, nm.length, true); lh.setUint16(28, 0, true);
+    parts.push(lh.buffer, nm, f.blob);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, tm, true); ch.setUint16(14, dt, true); ch.setUint32(16, crc, true); ch.setUint32(20, size, true); ch.setUint32(24, size, true);
+    ch.setUint16(28, nm.length, true); ch.setUint32(42, off, true);
+    cen.push(ch.buffer, nm); cenSize += 46 + nm.length; off += 30 + nm.length + size;
+  }
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, cenSize, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...cen, end.buffer], { type: 'application/zip' });
+}
 async function exportAll(list) {
   list = list || items;
   if (!list.length) return;
   let dir = null;
-  if (window.showDirectoryPicker) {
+  if (window.showDirectoryPicker) {   // máy tính (Chrome, Edge): chọn thư mục để lưu thẳng
     try { dir = await window.showDirectoryPicker({ mode: 'readwrite' }); }
-    catch (e) { if (e.name === 'AbortError') return; dir = null; }
+    catch (e) { if (e.name === 'AbortError') return; console.warn(e); dir = null; }
   }
   saveCurrent();
-  const keep = cur;
+  const keep = cur, used = new Set(), pend = [];
+  const uname = n => { let b = n, k = 2; while (used.has(n)) n = b.replace(/\.jpg$/, '_' + (k++) + '.jpg'); used.add(n); return n; };
   let done = 0;
   for (let n = 0; n < list.length; n++) {
     const i = items.indexOf(list[n]); if (i < 0) continue;
     const ok = await openItem(i);
     if (!ok) continue;
     busy(true, `Đang xuất ảnh ${n + 1}/${list.length}…`); await frame();
-    const blob = await canvasBlob(), name = items[i].name + '_da-chinh.jpg';
+    const blob = await canvasBlob(), name = uname(items[i].name + '_da-chinh.jpg');
+    let saved = false;
     if (dir) {
-      const fh = await dir.getFileHandle(name, { create: true });
-      const w = await fh.createWritable(); await w.write(blob); await w.close();
-    } else { download(blob, name); await new Promise(r => setTimeout(r, 600)); }
+      try { const fh = await dir.getFileHandle(name, { create: true }); const w = await fh.createWritable(); await w.write(blob); await w.close(); saved = true; }
+      catch (e) { console.warn('Không ghi được vào thư mục, chuyển sang gói ZIP', e); }
+    }
+    if (!saved) pend.push({ name, blob });
     done++;
   }
   await openItem(keep);
   busy(false);
+  if (pend.length === 1) download(pend[0].blob, pend[0].name);
+  else if (pend.length) {   // điện thoại, iPad, Safari, Firefox… không chọn được thư mục → gom thành một gói ZIP
+    busy(true, 'Đang gói ảnh thành ZIP…'); await frame();
+    download(await makeZip(pend), 'anh-da-chinh.zip'); busy(false);
+  }
+  $('#info').textContent = pend.length ? `Đã xuất ${done} ảnh${pend.length > 1 ? ' thành gói anh-da-chinh.zip (trong mục Tải xuống)' : ''}` : `Đã lưu ${done} ảnh vào thư mục đã chọn`;
 }
 // Áp cài đặt ảnh hiện tại cho tất cả ảnh
 // ----- Preset riêng (lưu trong trình duyệt) -----
@@ -3662,7 +3739,7 @@ function paintDot(e, last) {
 }
 const clearPaint = () => paintCv.getContext('2d').clearRect(0, 0, paintCv.width, paintCv.height);
 wrap.addEventListener('pointerdown', e => {
-  if (!S.GW || e.target.closest('#cmpTools, #histTools, #splitHandle, #drop')) return;
+  if (!S.GW || e.target.closest('#cmpTools, #histTools, #splitHandle, #drop, #cropStage, #cropPanel')) return;
   if (blemReview && e.button === 0) { drag = { x: e.clientX, y: e.clientY, tx: V.tx, ty: V.ty, moved: false, review: true }; wrap.setPointerCapture(e.pointerId); return; }
   if (beMode && e.button === 0 && !spaceDown) {
     if (!S.R) return;
@@ -3744,7 +3821,7 @@ wrap.addEventListener('pointercancel', () => { if (mdbDrag) { mdbDrag = null; md
 /* ---- Pinch-zoom 2 ngón trên màn hình cảm ứng (iPad...) ---- */
 (() => {
   const tp = new Map(); let pinch = null;
-  const skip = e => e.target.closest && e.target.closest('#cmpTools, #histTools, #splitHandle, #drop');
+  const skip = e => e.target.closest && e.target.closest('#cmpTools, #histTools, #splitHandle, #drop, #cropStage, #cropPanel');
   const loc = p => { const r = wrap.getBoundingClientRect(); return [p.x - r.left, p.y - r.top]; };
   const meas = () => { const [a, b] = [...tp.values()]; const [ax, ay] = loc(a), [bx, by] = loc(b);
     return { d: Math.max(1, Math.hypot(ax - bx, ay - by)), mx: (ax + bx) / 2, my: (ay + by) / 2 }; };
@@ -4401,6 +4478,169 @@ document.querySelectorAll('#hslTabs button').forEach(b => b.addEventListener('cl
 }));
 drawCurve();
 
+// ----- Nhóm chức năng: thu gọn, bấm tiêu đề để xổ ra -----
+(() => {
+  const KEY = 'chinhanh_sec_v1'; let st = {}; try { st = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+  document.querySelectorAll('.pane .sec').forEach(sec => {
+    const h = sec.querySelector(':scope > h3'); if (!h) return;
+    const pane = sec.closest('[data-pane]'), key = (pane ? pane.dataset.pane : '') + ':' + (h.firstChild ? h.firstChild.textContent : h.textContent).trim();
+    const set = o => { sec.classList.toggle('open', o); sec.classList.toggle('collapsed', !o); };
+    set(!!st[key]);
+    h.addEventListener('click', e => {
+      if (e.target.closest('button, input, label, select')) return;
+      set(sec.classList.contains('collapsed')); st[key] = sec.classList.contains('open');
+      try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e2) {}
+    });
+  });
+})();
+
+// ----- Cắt ảnh + chỉnh độ nghiêng: cắt từ ảnh gốc, ghi thành ảnh mới của ảnh này -----
+const CP = { on: false, ang: 0, rot: 0, ratio: 'free', P0: null, iw: 0, ih: 0, k: 1, cx: 0, cy: 0, r: null, want: null, drag: null };
+const cropStage = $('#cropStage'), cropFrame = $('#cropFrame'), cropImg = $('#cropImg'), cropPanel = $('#cropPanel');
+const cropRatio = () => CP.ratio === 'orig' ? CP.iw / CP.ih : +CP.ratio;
+function cropInside(r, ang = CP.ang) {   // 4 góc khung cắt phải nằm trong ảnh đã xoay
+  const a = ang * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a), hx = CP.iw / 2 + 0.01, hy = CP.ih / 2 + 0.01;
+  for (const [x, y] of [[r.cx - r.w / 2, r.cy - r.h / 2], [r.cx + r.w / 2, r.cy - r.h / 2], [r.cx + r.w / 2, r.cy + r.h / 2], [r.cx - r.w / 2, r.cy + r.h / 2]]) {
+    const u = x * c + y * sn, v = -x * sn + y * c;
+    if (Math.abs(u) > hx || Math.abs(v) > hy) return false;
+  }
+  return true;
+}
+function cropFit() {   // thu khung về trong ảnh (khi đổi góc nghiêng)
+  const r = CP.r = { ...CP.want }; let g = 0;
+  while (!cropInside(r) && g++ < 500) { r.w *= 0.99; r.h *= 0.99; r.cx *= 0.99; r.cy *= 0.99; }
+}
+function cropBuildP() {
+  const P0 = CP.P0, odd = CP.rot % 2, w = odd ? P0.height : P0.width, h = odd ? P0.width : P0.height;
+  cropImg.width = w; cropImg.height = h;
+  const x = cropImg.getContext('2d'); x.save(); x.translate(w / 2, h / 2); x.rotate(CP.rot * Math.PI / 2); x.drawImage(P0, -P0.width / 2, -P0.height / 2); x.restore();
+  CP.iw = w; CP.ih = h;
+}
+function cropLayout() {
+  if (!CP.on) return;
+  const sw = cropStage.clientWidth, sh = cropStage.clientHeight, ah = sh - cropPanel.offsetHeight - 30;
+  CP.k = Math.max(0.01, Math.min((sw - 24) / CP.iw, ah / CP.ih)); CP.cx = sw / 2; CP.cy = 8 + ah / 2;
+  Object.assign(cropImg.style, { width: CP.iw + 'px', height: CP.ih + 'px', transform: `translate(${CP.cx - CP.iw / 2}px,${CP.cy - CP.ih / 2}px) rotate(${CP.ang}deg) scale(${CP.k})` });
+  const r = CP.r, k = CP.k;
+  Object.assign(cropFrame.style, { left: CP.cx + k * (r.cx - r.w / 2) + 'px', top: CP.cy + k * (r.cy - r.h / 2) + 'px', width: r.w * k + 'px', height: r.h * k + 'px' });
+}
+function cropSetRatio(val) {
+  CP.ratio = val;
+  [...$('#cpAspect').children].forEach(b => b.classList.toggle('on', b.dataset.r === val));
+  cropStage.classList.toggle('locked', val !== 'free');
+  if (val !== 'free') {
+    const rr = cropRatio(), r = CP.want; let w, h;
+    if (r.w / r.h > rr) { h = r.h; w = h * rr; } else { w = r.w; h = w / rr; }
+    CP.want = { cx: r.cx, cy: r.cy, w, h };
+  }
+  cropFit(); cropLayout();
+}
+function cropOpen() {
+  if (!S.GW || CP.on || !S.item) return;
+  brushOffAll('crop');
+  flush();
+  const sc = Math.min(1, 1600 / Math.max(S.GW, S.GH)), P0 = document.createElement('canvas');   // chụp ảnh đang xem (đã chỉnh màu) làm nền xem trước
+  P0.width = Math.max(1, Math.round(S.GW * sc)); P0.height = Math.max(1, Math.round(S.GH * sc));
+  setCanvasSize(S.GW, S.GH); drawGL({ clean: true });
+  P0.getContext('2d').drawImage($('#view'), 0, 0, P0.width, P0.height);
+  S.rs = 0; applyView(); drawGL();
+  Object.assign(CP, { on: true, ang: 0, rot: 0, ratio: 'free', P0, drag: null });
+  $('#cpAngle').value = 0; $('#cpAngleOut').textContent = '0.0°';
+  cropStage.hidden = false; cropPanel.hidden = false; $('#view').style.visibility = 'hidden'; wrap.classList.add('cropping');
+  cropBuildP(); CP.want = { cx: 0, cy: 0, w: CP.iw, h: CP.ih };
+  $('#cpRestore').hidden = !S.item.origFile;
+  cropSetRatio('free');
+}
+function cropClose() {
+  CP.on = false; CP.P0 = null; cropStage.hidden = true; cropPanel.hidden = true; $('#view').style.visibility = ''; wrap.classList.remove('cropping');
+}
+async function cropReplace(it) {   // đổi ảnh gốc của ảnh này: xóa dữ liệu theo vùng (không còn khớp) rồi mở lại
+  saveCurrent();
+  const k = bmCache.findIndex(x => x.it === it); if (k >= 0) bmCache.splice(k, 1)[0].bm.close();
+  const a = aiOrder.indexOf(it); if (a >= 0) aiOrder.splice(a, 1);
+  it.work = null; it.ai = null; it.spots = []; S.spots = [];
+  for (const kk of ['liq', 'mdb']) { it[kk] = null; it[kk + 'Ver'] = 0; it[kk + 'Store'] = null; }
+  for (const [kk, ver, store] of SESS_EDITS) { it[kk] = null; it[ver] = 0; it[store] = null; }
+  it.hist = null; it.fut = []; it.edited = true; sessDirty = true;
+  mkFaces = {}; mkAll = null; mkSel = -1;
+  cropClose();
+  makeThumb(it).then(renderStrip);
+  await openItem(cur);
+}
+async function cropApply() {
+  const it = S.item, bm = it && getBitmap(it);
+  if (!bm || !CP.on) { cropClose(); return; }
+  if ((it.spots && it.spots.length || it.liq || it.mdb || SESS_EDITS.some(([k]) => it[k])) &&
+      !confirm('Cắt ảnh sẽ xóa các chỉnh sửa theo vùng (xóa mụn, liquify, cọ…). Màu sắc, ánh sáng và bộ lọc vẫn được giữ. Tiếp tục?')) return;
+  busy(true, 'Đang cắt ảnh…'); await frame();
+  try {
+    const f = bm.width / CP.P0.width, r = CP.r, odd = CP.rot % 2, W = odd ? bm.height : bm.width, H = odd ? bm.width : bm.height;
+    let src = bm;
+    if (CP.rot) { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.translate(W / 2, H / 2); x.rotate(CP.rot * Math.PI / 2); x.drawImage(bm, -bm.width / 2, -bm.height / 2); src = c; }
+    let ow = r.w * f, oh = r.h * f;
+    const lim = (/iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document)) ? 16e6 : 40e6;
+    const sc = Math.min(1, Math.sqrt(lim / (ow * oh)), 16000 / Math.max(ow, oh));
+    ow = Math.max(1, Math.round(ow * sc)); oh = Math.max(1, Math.round(oh * sc));
+    const out = document.createElement('canvas'); out.width = ow; out.height = oh;
+    const x = out.getContext('2d'); x.imageSmoothingQuality = 'high';
+    x.translate(ow / 2, oh / 2); x.translate(-r.cx * f * sc, -r.cy * f * sc); x.rotate(CP.ang * Math.PI / 180); x.scale(sc, sc); x.translate(-W / 2, -H / 2); x.drawImage(src, 0, 0);
+    const blob = await new Promise(res => out.toBlob(res, 'image/jpeg', 0.95));
+    if (!blob) throw new Error('trình duyệt không tạo được ảnh');
+    it.origFile = it.origFile || it.file; it.file = new File([blob], (it.name || 'anh') + '_cat.jpg', { type: 'image/jpeg' }); it.cropped = true;
+    await cropReplace(it);
+  } catch (e) { alert('Không cắt được ảnh: ' + e.message); }
+  busy(false);
+}
+$('#cropBtn').addEventListener('click', cropOpen);
+$('#cpCancel').addEventListener('click', cropClose);
+$('#cpApply').addEventListener('click', cropApply);
+$('#cpAspect').addEventListener('click', e => { const b = e.target.closest('button'); if (b) cropSetRatio(b.dataset.r); });
+$('#cpAngle').addEventListener('input', e => { CP.ang = +e.target.value; $('#cpAngleOut').textContent = CP.ang.toFixed(1) + '°'; cropFit(); cropLayout(); });
+$('#cpAng0').addEventListener('click', () => { $('#cpAngle').value = 0; $('#cpAngle').dispatchEvent(new Event('input')); });
+for (const [id, d] of [['cpRotL', 3], ['cpRotR', 1]]) $('#' + id).addEventListener('click', () => {
+  CP.rot = (CP.rot + d) % 4; cropBuildP(); CP.want = { cx: 0, cy: 0, w: CP.iw, h: CP.ih }; cropSetRatio(CP.ratio);
+});
+$('#cpRestore').addEventListener('click', async () => {
+  const it = S.item; if (!it || !it.origFile) return;
+  if (!confirm('Khôi phục ảnh gốc chưa cắt? Các chỉnh sửa theo vùng (xóa mụn, liquify, cọ…) sẽ bị xóa.')) return;
+  busy(true, 'Đang khôi phục ảnh gốc…'); await frame();
+  it.file = it.origFile; it.origFile = null; it.cropped = false;
+  try { await cropReplace(it); } catch (e) { alert('Không khôi phục được: ' + e.message); }
+  busy(false);
+});
+function cropPt(e) { const r = cropStage.getBoundingClientRect(); return [(e.clientX - r.left - CP.cx) / CP.k, (e.clientY - r.top - CP.cy) / CP.k]; }
+function cropStart(e, mode) { e.preventDefault(); e.stopPropagation(); cropFrame.setPointerCapture(e.pointerId); CP.drag = { mode, p0: cropPt(e), r0: { ...CP.r }, id: e.pointerId }; }
+function cropResize(h, r0, x, y) {
+  const min = Math.max(16, Math.min(CP.iw, CP.ih) * 0.04);
+  let L = r0.cx - r0.w / 2, R = r0.cx + r0.w / 2, T = r0.cy - r0.h / 2, B = r0.cy + r0.h / 2;
+  if (CP.ratio === 'free') {
+    if (h.includes('w')) L = Math.min(x, R - min);
+    if (h.includes('e')) R = Math.max(x, L + min);
+    if (h.includes('n')) T = Math.min(y, B - min);
+    if (h.includes('s')) B = Math.max(y, T + min);
+  } else {   // khóa tỉ lệ: góc đối diện đứng yên
+    const rr = cropRatio(), ax = h.includes('w') ? R : L, ay = h.includes('n') ? B : T;
+    const w = Math.max(min, h.includes('w') ? ax - x : x - ax), hh = w / rr;
+    if (h.includes('w')) { L = ax - w; R = ax; } else { L = ax; R = ax + w; }
+    if (h.includes('n')) { T = ay - hh; B = ay; } else { T = ay; B = ay + hh; }
+  }
+  return { cx: (L + R) / 2, cy: (T + B) / 2, w: R - L, h: B - T };
+}
+cropFrame.addEventListener('pointerdown', e => { if (!e.target.dataset.h) cropStart(e, 'move'); });
+cropFrame.querySelectorAll('.cph').forEach(h => h.addEventListener('pointerdown', e => cropStart(e, h.dataset.h)));
+cropFrame.addEventListener('pointermove', e => {
+  const d = CP.drag; if (!d || e.pointerId !== d.id) return;
+  const [x, y] = cropPt(e), dx = x - d.p0[0], dy = y - d.p0[1], r0 = d.r0; let r;
+  if (d.mode === 'move') r = [[dx, dy], [dx, 0], [0, dy]].map(([ax, ay]) => ({ ...r0, cx: r0.cx + ax, cy: r0.cy + ay })).find(c => cropInside(c));
+  else r = cropResize(d.mode, r0, x, y);
+  if (r && r.w > 1 && r.h > 1 && cropInside(r)) { CP.r = r; CP.want = { ...r }; cropLayout(); }
+});
+const cropEndDrag = () => { CP.drag = null; };
+cropFrame.addEventListener('pointerup', cropEndDrag); cropFrame.addEventListener('pointercancel', cropEndDrag);
+addEventListener('keydown', e => { if (!CP.on || e.target.tagName === 'INPUT') return; if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cropClose(); } else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); cropApply(); } }, true);
+addEventListener('resize', cropLayout);
+if (window.ResizeObserver) new ResizeObserver(cropLayout).observe(wrap);
+
 /* =====================================================================
    TỰ LƯU PHIÊN LÀM VIỆC (IndexedDB trong trình duyệt)
    ===================================================================== */
@@ -4423,23 +4663,43 @@ async function sessOp(mode, fn) {
 }
 const sessGet = () => sessOp('readonly', s => s.get(SESS_KEY));
 const sessPut = v => sessOp('readwrite', s => s.put(v, SESS_KEY));
-async function sessClear() { try { await sessOp('readwrite', s => s.delete(SESS_KEY)); } catch (e) {} }
+async function sessClear() { try { await sessOp('readwrite', s => s.clear()); } catch (e) {} }
+const sessGetK = k => sessOp('readonly', s => s.get(k));
+const sessPutK = (k, v) => sessOp('readwrite', s => s.put(v, k));
+const sessDelK = k => sessOp('readwrite', s => s.delete(k));
 const SESS_EDITS = [['bodyEdit', 'beVer', 'beStore'], ['blushEdit', 'blVer', 'blStore'], ['clothEdit', 'clVer', 'clStore']];
-function sessPack() {
-  saveCurrent();
-  return { v: 1, cur, t: Date.now(), items: items.map(it => {
-    const r = { file: it.file, name: it.name, params: it.params, edited: !!it.edited,
-      spots: (it.spots || []).map(st => ({ st, patch: aiPatch.get(st) || null })), liq: it.liq || null, liqVer: it.liqVer || 0,
-      mdb: it.mdb ? { w: it.mdb.w, h: it.mdb.h, q: mdbQuant(it.mdb.d) } : null, mdbVer: it.mdbVer || 0 };
-    for (const [k, ver] of SESS_EDITS) { r[k] = it[k] || null; r[ver] = it[ver] || 0; }
-    return r;
-  }) };
+const sidOf = it => it.sid || (it.sid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+function itemRec(it) {
+  const r = { name: it.name, params: it.params, edited: !!it.edited, cropped: !!it.cropped,
+    spots: (it.spots || []).map(st => ({ st, patch: aiPatch.get(st) || null })), liq: it.liq || null, liqVer: it.liqVer || 0,
+    mdb: it.mdb ? { w: it.mdb.w, h: it.mdb.h, q: mdbQuant(it.mdb.d) } : null, mdbVer: it.mdbVer || 0 };
+  for (const [k, ver] of SESS_EDITS) { r[k] = it[k] || null; r[ver] = it[ver] || 0; }
+  return r;
 }
-let sessBusy = false;
-async function sessSave() {
-  if (!sessDirty || sessBusy || !items.length) return;
+const itemSig = it => JSON.stringify([it.name, it.params, it.edited, it.cropped, (it.spots || []).length, it.liqVer, it.mdbVer, it.beVer, it.blVer, it.clVer]);
+let sessBusy = false, sessNext = 0, sessWarned = false, sessSavedIds = new Set();
+async function sessSave() {   // mỗi ảnh lưu riêng: ảnh gốc lưu 1 lần, chỉ lưu lại ảnh nào có thay đổi
+  if (!sessDirty || sessBusy || !items.length || Date.now() < sessNext) return;
   sessBusy = true; sessDirty = false;
-  try { await sessPut(sessPack()); } catch (e) { console.warn('Không tự lưu được phiên làm việc', e); }
+  try {
+    saveCurrent();
+    for (const it of items.slice()) {
+      const sid = sidOf(it);
+      if (it.fileSaved !== it.file) { await sessPutK('f:' + sid, it.file); it.fileSaved = it.file; }
+      if (it.origFile && it.origSaved !== it.origFile) { await sessPutK('fo:' + sid, it.origFile); it.origSaved = it.origFile; }
+      if (!it.origFile && it.origSaved) { await sessDelK('fo:' + sid); it.origSaved = null; }
+      const sig = itemSig(it);
+      if (it.sigSaved !== sig) { await sessPutK('it:' + sid, itemRec(it)); it.sigSaved = sig; }
+    }
+    const ids = items.map(sidOf);
+    await sessPutK('idx', { v: 2, cur, t: Date.now(), ids });
+    for (const id of sessSavedIds) if (!ids.includes(id)) for (const pf of ['f:', 'fo:', 'it:']) await sessDelK(pf + id);
+    if (sessSavedIds.size === 0) await sessDelK(SESS_KEY);   // bỏ bản lưu kiểu cũ
+    sessSavedIds = new Set(ids); sessWarned = false;
+  } catch (e) {
+    console.warn('Không tự lưu được phiên làm việc', e); sessDirty = true; sessNext = Date.now() + 15000;
+    if (!sessWarned) { sessWarned = true; $('#info').textContent = 'Không tự lưu được phiên làm việc (bộ nhớ trình duyệt đầy hoặc bị chặn). Hãy xuất ảnh sớm.'; }
+  }
   sessBusy = false;
 }
 setInterval(sessSave, 3000);
@@ -4459,16 +4719,39 @@ async function sessRestore(rec) {
   await openItem(Math.max(0, Math.min(items.length - 1, rec.cur >= 0 ? rec.cur : 0)));
   updateBatchBtns();
 }
+async function sessRestoreV2(idx) {
+  for (const id of idx.ids) {
+    const file = await sessGetK('f:' + id), r = await sessGetK('it:' + id);
+    if (!file || !r) continue;
+    const it = { file, name: r.name, params: r.params, spots: [], autoPending: false, edited: !!r.edited, cropped: !!r.cropped, sid: id, fileSaved: file };
+    const fo = await sessGetK('fo:' + id); if (fo) { it.origFile = fo; it.origSaved = fo; }
+    for (const s of r.spots || []) { it.spots.push(s.st); if (s.patch) aiPatch.set(s.st, s.patch); }
+    if (r.liq) { it.liq = r.liq; it.liqVer = r.liqVer || 1; it.liqStore = new Map([[it.liqVer, r.liq.d.slice()]]); }
+    if (r.mdb) { it.mdb = { w: r.mdb.w, h: r.mdb.h, d: mdbDequant(r.mdb.q) }; it.mdbVer = r.mdbVer || 1; it.mdbStore = new Map([[it.mdbVer, r.mdb.q]]); }
+    for (const [k, ver, store] of SESS_EDITS) if (r[k]) { it[k] = r[k]; it[ver] = r[ver] || 1; it[store] = new Map([[it[ver], r[k].slice()]]); }
+    it.sigSaved = itemSig(it);
+    items.push(it); makeThumb(it).then(renderStrip);
+  }
+  if (!items.length) return;
+  sessSavedIds = new Set(items.map(x => x.sid));
+  renderStrip();
+  $('#drop').style.display = 'none'; $('#strip').style.display = 'flex';
+  await openItem(Math.max(0, Math.min(items.length - 1, idx.cur >= 0 ? idx.cur : 0)));
+  updateBatchBtns();
+}
 (async () => {
   try {
     if (!window.indexedDB) return;
-    const rec = await sessGet();
-    if (!rec || !rec.items || !rec.items.length || items.length) return;
-    $('#sessTxt').textContent = `Có phiên làm việc dở: ${rec.items.length} ảnh (lưu lúc ${new Date(rec.t).toLocaleString('vi-VN')})`;
+    const idx = await sessGetK('idx');
+    let rec = null;
+    if (!idx || !idx.ids || !idx.ids.length) { rec = await sessGet(); if (!rec || !rec.items || !rec.items.length) return; }
+    if (items.length) return;
+    const n = idx ? idx.ids.length : rec.items.length, t = idx ? idx.t : rec.t;
+    $('#sessTxt').textContent = `Có phiên làm việc dở: ${n} ảnh (lưu lúc ${new Date(t).toLocaleString('vi-VN')})`;
     $('#sessBox').style.display = 'block';
     $('#sessYes').addEventListener('click', async e => {
       e.stopPropagation(); $('#sessBox').style.display = 'none'; busy(true, 'Đang khôi phục phiên làm việc…');
-      try { await sessRestore(rec); } catch (err) { console.error(err); }
+      try { if (idx && idx.ids && idx.ids.length) await sessRestoreV2(idx); else await sessRestore(rec); } catch (err) { console.error(err); }
       busy(false);
     });
     $('#sessNo').addEventListener('click', e => { e.stopPropagation(); $('#sessBox').style.display = 'none'; sessClear(); });
