@@ -196,7 +196,9 @@
   @media (max-width:860px){
     :root{--tabsH:58px}
     html,body{overflow:hidden}
-    main{height:calc(100dvh - 49px - var(--tabsH));grid-template-rows:minmax(0,1fr)}
+    main{height:calc(100dvh - 49px - var(--asideH, calc(var(--tabsH) + 58px)));grid-template-rows:minmax(0,1fr)}
+    #cmpTools{top:12px;bottom:auto}
+    #histTools{left:12px;right:auto}
     #stage{min-height:0}
     aside{position:fixed;left:0;right:0;bottom:0;z-index:30;border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.35)}
     #tabs{order:3;height:var(--tabsH);border-bottom:none;flex:none}
@@ -340,7 +342,8 @@
             <button class="ico" id="beClear" title="Xóa nét">✕</button>
           </div>
           <div class="row"><span>Cỡ cọ</span><input type="range" id="beSize" min="3" max="300" value="80"><output></output></div>
-          <div class="row"><span>Độ mờ viền</span><input type="range" id="beSoft" min="0" max="100" value="50"><output></output></div>
+          <div class="row" title="Nhẹ → Mạnh: độ đậm mỗi lần bôi, bôi chồng sẽ đậm dần"><span>Mức độ cọ</span><input type="range" id="beFlow" min="1" max="100" value="50"><output></output></div>
+          <div class="row"><span title="Cứng → Mềm">Độ mờ viền</span><input type="range" id="beSoft" min="0" max="100" value="50"><output></output></div>
           <label class="chk" style="display:none!important"><input type="checkbox" id="beEdge" checked> Bám màu</label>
         </div>
         <div class="sec">
@@ -358,7 +361,8 @@
             <button class="ico" id="clClear" title="Xóa nét">✕</button>
           </div>
           <div class="row"><span>Cỡ cọ</span><input type="range" id="clSize" min="3" max="300" value="80"><output></output></div>
-          <div class="row"><span>Độ mờ viền</span><input type="range" id="clSoft" min="0" max="100" value="50"><output></output></div>
+          <div class="row" title="Nhẹ → Mạnh: độ đậm mỗi lần bôi, bôi chồng sẽ đậm dần"><span>Mức độ cọ</span><input type="range" id="clFlow" min="1" max="100" value="50"><output></output></div>
+          <div class="row"><span title="Cứng → Mềm">Độ mờ viền</span><input type="range" id="clSoft" min="0" max="100" value="50"><output></output></div>
         </div>
         <div class="sec">
           <h3>Mắt, răng</h3>
@@ -440,7 +444,8 @@
               <button class="ico" id="blClear" title="Xóa nét">✕</button>
             </div>
             <div class="row"><span>Cỡ cọ</span><input type="range" id="blSize" min="3" max="300" value="70"><output></output></div>
-            <div class="row"><span>Độ mờ viền</span><input type="range" id="blSoft" min="0" max="100" value="80"><output></output></div>
+            <div class="row" title="Nhẹ → Mạnh: độ đậm mỗi lần bôi, bôi chồng sẽ đậm dần"><span>Mức độ cọ</span><input type="range" id="blFlow" min="1" max="100" value="50"><output></output></div>
+            <div class="row"><span title="Cứng → Mềm">Độ mờ viền</span><input type="range" id="blSoft" min="0" max="100" value="80"><output></output></div>
           </div>
           <div class="sec">
             <h3>Phấn mắt</h3>
@@ -479,6 +484,21 @@
           <div class="row"><span>Điểm đen</span><input type="range" id="blacks" min="-100" max="100" value="0"><output></output></div>
           <div class="row" title="Kéo phải: dìm tối nền · Kéo trái: làm sáng nền"><span>Dìm nền (BG)</span><input type="range" id="bgDim" min="-100" max="100" value="0"><output></output></div>
           <div class="row" title="Kéo phải: nổi chủ thể · Kéo trái: lùi chủ thể"><span>Nổi chủ thể</span><input type="range" id="subPop" min="-100" max="100" value="0"><output></output></div>
+        </div>
+        <div class="sec">
+          <h3>Dodge &amp; Burn thủ công</h3>
+          <div class="btns" id="mdbTools">
+            <button data-mdb="dodge" title="Bôi để làm sáng vùng">☀ Dodge</button>
+            <button data-mdb="burn" title="Bôi để làm tối vùng">◐ Burn</button>
+            <button data-mdb="erase" title="Tẩy bớt vùng đã bôi">⌫ Tẩy</button>
+          </div>
+          <div class="row"><span>Cỡ cọ</span><input type="range" id="mdbSize" min="5" max="300" value="100"><output></output></div>
+          <div class="row" title="0 = viền cứng · 100 = viền mềm nhất"><span>Mềm viền</span><input type="range" id="mdbSoft" min="0" max="100" value="70"><output></output></div>
+          <div class="row" title="Mức áp mỗi lần kéo cọ; kéo chồng nhiều lần sẽ đậm dần"><span>Mức áp</span><input type="range" id="mdbStr" min="1" max="100" value="25"><output></output></div>
+          <div class="row" title="Độ lan khi bấm nút Loang bên dưới"><span>Độ loang</span><input type="range" id="mdbFeather" min="1" max="100" value="30"><output></output></div>
+          <button class="wide" id="mdbFeatherBtn" title="Làm mềm, dàn đều vùng đã tô như Feather mặt nạ">Loang vùng tô (Feather)</button>
+          <label class="chk"><input type="checkbox" id="mdbShow"> Hiện vùng đã tô (cam = sáng, xanh = tối)</label>
+          <button class="wide" id="mdbClear">Xóa Dodge/Burn thủ công</button>
         </div>
         <div class="sec">
           <h3>Màu sắc</h3>
@@ -632,7 +652,7 @@ const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
 let faceLM = null, segm = null, poseLM = null, faceapi = null, modelsReady = false;
 const S = { spots: [] };
 // trang điểm theo từng khuôn mặt: "Tất cả" (mkSel = -1) hoặc riêng từng mặt
-const TOOL_IDS = ['healSize', 'beSize', 'beSoft', 'blSize', 'blSoft', 'clSize', 'clSoft', 'liqSize', 'liqStr'];
+const TOOL_IDS = ['healSize', 'beSize', 'beSoft', 'blSize', 'blSoft', 'clSize', 'clSoft', 'liqSize', 'liqStr', 'mdbSize', 'mdbSoft', 'mdbStr', 'mdbFeather', 'beFlow', 'blFlow', 'clFlow'];
 const MK_KEYS = ['lipAmt', 'lipSat', 'blushAmt', 'shadowAmt', 'browF', 'browM', 'lipNatM', 'oilM'];
 let mkSel = -1, mkFaces = {}, mkAll = null;          // dữ liệu của ảnh đang mở
 const items = [];                 // danh sách ảnh
@@ -795,6 +815,7 @@ precision highp float; precision highp sampler3D;
 uniform sampler2D uOrig, uDelta, uOver, uSrc; uniform sampler3D uLut;
 uniform vec2 uSize, uOut; uniform float uK, uSplit, uSharp, uTex, uClar, uDehaze, uLodT, uLodC;
 uniform int uShowOrig, uHasDelta, uOverOn, uNW, uLiqOn, uShpOn; uniform sampler2D uLiq, uShp;
+uniform sampler2D uMdb; uniform int uMdbOn, uMdbView;
 uniform vec4 uWA[64]; uniform vec4 uWB[64];
 out vec4 frag;
 // Lấy mẫu ảnh gốc: khi xem nhỏ hơn ảnh thật thì lấy 4 mẫu ở mức chi tiết cao hơn rồi gộp lại (nét, không răng cưa)
@@ -882,6 +903,15 @@ void main(){
   c = clamp(c, 0.0, 1.0);
   c = texture(uLut, c * (32.0 / 33.0) + 0.5 / 33.0).rgb;
   if (uOverOn == 1) { vec4 ov = texture(uOver, uv); c = mix(c, ov.rgb, ov.a); }
+  if (uMdbOn == 1) {   // Dodge & Burn thủ công: tăng/giảm sáng theo mặt nạ, có bảo vệ vùng cực sáng
+    float m = texture(uMdb, uv).r;
+    if (abs(m) > 0.002) {
+      vec3 lin = pow(max(c, vec3(0.0)), vec3(2.2)) * exp2(m * 1.5);
+      lin = mix(lin, vec3(0.8) + (lin - 0.8) / (1.0 + (lin - 0.8) * 2.5), step(vec3(0.8), lin));
+      c = clamp(pow(lin, vec3(1.0 / 2.2)), 0.0, 1.0);
+    }
+    if (uMdbView == 1) c = mix(c, m > 0.0 ? vec3(1.0, 0.75, 0.2) : vec3(0.2, 0.55, 1.0), clamp(abs(m) * 0.7, 0.0, 0.65));
+  }
   frag = vec4(c, 1.0);
 }`;
 const GL = {};
@@ -897,20 +927,21 @@ function initGL() {
   if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
   gl.useProgram(pr);
   Object.assign(GL, { gl, pr, vao: gl.createVertexArray(), maxTex: gl.getParameter(gl.MAX_TEXTURE_SIZE), u: {} });
-  for (const n of ['uShp', 'uShpOn', 'uLiq', 'uLiqOn', 'uSrc', 'uTex', 'uClar', 'uDehaze', 'uLodT', 'uLodC', 'uOrig', 'uDelta', 'uOver', 'uLut', 'uSize', 'uOut', 'uK', 'uSplit', 'uSharp', 'uShowOrig', 'uHasDelta', 'uOverOn', 'uNW', 'uWA', 'uWB'])
+  for (const n of ['uMdb', 'uMdbOn', 'uMdbView', 'uShp', 'uShpOn', 'uLiq', 'uLiqOn', 'uSrc', 'uTex', 'uClar', 'uDehaze', 'uLodT', 'uLodC', 'uOrig', 'uDelta', 'uOver', 'uLut', 'uSize', 'uOut', 'uK', 'uSplit', 'uSharp', 'uShowOrig', 'uHasDelta', 'uOverOn', 'uNW', 'uWA', 'uWB'])
     GL.u[n] = gl.getUniformLocation(pr, n);
-  gl.uniform1i(GL.u.uOrig, 0); gl.uniform1i(GL.u.uDelta, 1); gl.uniform1i(GL.u.uOver, 2); gl.uniform1i(GL.u.uLut, 3); gl.uniform1i(GL.u.uSrc, 4); gl.uniform1i(GL.u.uLiq, 5); gl.uniform1i(GL.u.uShp, 6);
+  gl.uniform1i(GL.u.uOrig, 0); gl.uniform1i(GL.u.uDelta, 1); gl.uniform1i(GL.u.uOver, 2); gl.uniform1i(GL.u.uLut, 3); gl.uniform1i(GL.u.uSrc, 4); gl.uniform1i(GL.u.uLiq, 5); gl.uniform1i(GL.u.uShp, 6); gl.uniform1i(GL.u.uMdb, 7);
   const mk = (target) => { const t = gl.createTexture(); gl.bindTexture(target, t);
     gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     if (target === gl.TEXTURE_3D) gl.texParameteri(target, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
     return t; };
-  GL.tOrig = mk(gl.TEXTURE_2D); GL.tSrc = mk(gl.TEXTURE_2D); GL.tLiq = mk(gl.TEXTURE_2D); GL.tShp = mk(gl.TEXTURE_2D); GL.tDelta = mk(gl.TEXTURE_2D); GL.tOver = mk(gl.TEXTURE_2D); GL.tLut = mk(gl.TEXTURE_3D);
+  GL.tOrig = mk(gl.TEXTURE_2D); GL.tSrc = mk(gl.TEXTURE_2D); GL.tLiq = mk(gl.TEXTURE_2D); GL.tShp = mk(gl.TEXTURE_2D); GL.tMdb = mk(gl.TEXTURE_2D); GL.tDelta = mk(gl.TEXTURE_2D); GL.tOver = mk(gl.TEXTURE_2D); GL.tLut = mk(gl.TEXTURE_3D);
   gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
   uploadDelta(new Float32Array(4), 1, 1);
   uploadOver(new Uint8Array(4), 1, 1);
   gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, GL.tLiq); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, 1, 1, 0, gl.RG, gl.FLOAT, new Float32Array(2));
   gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, GL.tShp); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, 1, 1, 0, gl.RG, gl.FLOAT, new Float32Array(2));
+  gl.activeTexture(gl.TEXTURE7); gl.bindTexture(gl.TEXTURE_2D, GL.tMdb); gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, 1, 1, 0, gl.RED, gl.FLOAT, new Float32Array(1));
   return true;
 }
 function uploadOrig(source, W, H) {
@@ -984,6 +1015,9 @@ function drawGL(opts = {}) {
   gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, GL.tOver);
   gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_3D, GL.tLut);
   gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, GL.tSrc);
+  gl.uniform1i(u.uMdbOn, S.mdb && S.mdbUsed && EN.light ? 1 : 0);
+  gl.uniform1i(u.uMdbView, !opts.clean && S.mdbShow ? 1 : 0);
+  gl.activeTexture(gl.TEXTURE7); gl.bindTexture(gl.TEXTURE_2D, GL.tMdb);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 
@@ -1871,6 +1905,7 @@ async function openItem(i) {
   uploadOrig(gsrc, GW, GH);
   S.src = gsrc; S.healCv = null;
   S.liq = it.liq || null; S.liqVer = it.liqVer || 0; S.liqUsed = false; if (S.liq) uploadLiq(); shpKey = ''; S.shp = null;
+  S.mdb = it.mdb || null; S.mdbVer = it.mdbVer || 0; S.mdbUsed = false; if (S.mdb) uploadMdb();
   S.beVer = it.beVer || 0; S.blVer = it.blVer || 0; S.clVer = it.clVer || 0;
   // Ảnh nhỏ dùng cho AI và chỉnh da (tạo một lần, giữ lại)
   if (!it.work) {
@@ -2753,7 +2788,7 @@ async function rebuildHeal() {
   busy(false);
 }
 // ----- Lịch sử chỉnh sửa (Ctrl+Z hoàn tác, Ctrl+Y / Ctrl+Shift+Z làm lại), riêng từng ảnh -----
-const snap = () => ({ st: getSliderState(), spots: S.spots.map(x => x), lv: S.liqVer || 0, bv: S.beVer || 0, blv: S.blVer || 0, clv: S.clVer || 0 });
+const snap = () => ({ st: getSliderState(), spots: S.spots.map(x => x), lv: S.liqVer || 0, bv: S.beVer || 0, blv: S.blVer || 0, clv: S.clVer || 0, mv: S.mdbVer || 0 });
 let histT = 0, restoring = false;
 function commitHist() {
   sessDirty = true;
@@ -2772,6 +2807,11 @@ async function restoreSnap(sn) {
     const L = ensureLiq(), src = sn.lv ? S.item.liqStore && S.item.liqStore.get(sn.lv) : null;
     if (src) L.d.set(src); else L.d.fill(0);
     S.liqVer = sn.lv || 0; S.item.liqVer = S.liqVer; uploadLiq();
+  }
+  if ((sn.mv || 0) !== (S.mdbVer || 0)) {
+    const M = ensureMdb(), src = sn.mv ? S.item.mdbStore && S.item.mdbStore.get(sn.mv) : null;
+    if (src) M.d.set(mdbDequant(src)); else M.d.fill(0);
+    S.mdbVer = sn.mv || 0; S.item.mdbVer = S.mdbVer; uploadMdb();
   }
   for (const [t, key] of [['body', 'bv'], ['blush', 'blv'], ['cloth', 'clv']]) {
     const B = BT[t]; if ((sn[key] || 0) === (S[B.ver] || 0)) continue;
@@ -3398,11 +3438,86 @@ function clearLiquify() {
   if (!S.liq || !S.liqUsed) return;
   S.liq.d.fill(0); uploadLiq(); liqCommit(); drawGL();
 }
+// ----- Dodge & Burn thủ công: mặt nạ sáng/tối (−1…+1) lưu riêng từng ảnh, áp trên card đồ họa -----
+let mdbMode = null, mdbDrag = null, mdbRaf = 0;
+const MDB_SP = 0.12;   // khoảng cách giữa các dấu cọ (theo bán kính)
+const mdbR = () => Math.max(2, (+$('#mdbSize').value / 100) * Math.max(S.GW, S.GH) * 0.05);
+const mdbQuant = d => Int8Array.from(d, v => Math.round(Math.max(-1, Math.min(1, v)) * 127));
+const mdbDequant = q => Float32Array.from(q, v => v / 127);
+function ensureMdb() {
+  if (S.mdb) return S.mdb;
+  const L = 1024, w = S.GW >= S.GH ? L : Math.max(8, Math.round(L * S.GW / S.GH)), h = S.GW >= S.GH ? Math.max(8, Math.round(L * S.GH / S.GW)) : L;
+  S.mdb = { w, h, d: new Float32Array(w * h) }; S.item.mdb = S.mdb; S.mdbVer = S.mdbVer || 0;
+  return S.mdb;
+}
+function uploadMdb(scan = true) {
+  const { gl } = GL, M = S.mdb; if (!M) return;
+  gl.activeTexture(gl.TEXTURE7); gl.bindTexture(gl.TEXTURE_2D, GL.tMdb);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, M.w, M.h, 0, gl.RED, gl.FLOAT, M.d);
+  if (scan) S.mdbUsed = M.d.some(v => Math.abs(v) > 0.002);
+}
+function mdbPt(ev) {   // điểm trên màn hình → toạ độ ảnh gốc (qua Liquify, tạo dáng, biến dạng)
+  let [x, y] = screenToImg(ev);
+  if (S.liq && S.liqUsed) { const q = liqAt(x, y); x += q[0]; y += q[1]; }
+  if (S.shp) { const q = shpAt(x, y); x += q[0]; y += q[1]; }
+  return srcOf(mdbDrag.ws, x, y);
+}
+function mdbStamp(cx, cy) {
+  const M = ensureMdb(), R = mdbR(), sx = S.GW / M.w, sy = S.GH / M.h, inner = 1 - +$('#mdbSoft').value / 100;
+  const s = Math.min(0.97, +$('#mdbStr').value / 100), d = 1 - Math.pow(1 - s, MDB_SP / 2);   // một lượt kéo đạt khoảng "mức áp"; kéo chồng sẽ đậm dần
+  const u0 = Math.max(0, Math.floor((cx - R) / sx)), u1 = Math.min(M.w - 1, Math.ceil((cx + R) / sx)), v0 = Math.max(0, Math.floor((cy - R) / sy)), v1 = Math.min(M.h - 1, Math.ceil((cy + R) / sy));
+  for (let v = v0; v <= v1; v++) for (let u = u0; u <= u1; u++) {
+    const dd = Math.hypot((u + 0.5) * sx - cx, (v + 0.5) * sy - cy) / R; if (dd >= 1) continue;
+    let w = 1; if (dd > inner) { const t = (dd - inner) / (1 - inner); w = 1 - t * t * (3 - 2 * t); }
+    const a = d * w, i = v * M.w + u;
+    if (mdbMode === 'dodge') M.d[i] += (1 - M.d[i]) * a; else if (mdbMode === 'burn') M.d[i] += (-1 - M.d[i]) * a; else M.d[i] -= M.d[i] * a;
+  }
+  S.mdbUsed = true;
+  if (!mdbRaf) mdbRaf = requestAnimationFrame(() => { mdbRaf = 0; uploadMdb(false); drawGL(); });
+}
+function mdbCommit() {
+  const it = S.item; if (!it || !S.mdb) return;
+  S.mdbVer = (S.mdbVer || 0) + 1; it.mdbVer = S.mdbVer;
+  (it.mdbStore ||= new Map()).set(S.mdbVer, mdbQuant(S.mdb.d));
+  markEdited(); commitHist();
+}
+function clearMdb() {
+  if (!S.mdb || !S.mdbUsed) return;
+  S.mdb.d.fill(0); uploadMdb(); mdbCommit(); drawGL();
+}
+function mdbFeather() {   // loang / làm mềm vùng đã tô (giống Feather mặt nạ trong Photoshop)
+  const M = S.mdb; if (!M || !S.mdbUsed) { $('#info').textContent = 'Chưa có vùng Dodge/Burn để loang'; return; }
+  const r = Math.max(1, Math.round(+$('#mdbFeather').value / 100 * 0.04 * Math.max(M.w, M.h))), { w, h, d } = M, tmp = new Float32Array(w * h), n = 2 * r + 1;
+  for (let pass = 0; pass < 3; pass++) {   // 3 lần làm mờ hộp ≈ làm mờ Gauss
+    for (let y = 0; y < h; y++) {
+      const b = y * w; let a = 0;
+      for (let k = -r; k <= r; k++) a += d[b + Math.min(w - 1, Math.max(0, k))];
+      for (let x = 0; x < w; x++) { tmp[b + x] = a / n; a += d[b + Math.min(w - 1, x + r + 1)] - d[b + Math.max(0, x - r)]; }
+    }
+    for (let x = 0; x < w; x++) {
+      let a = 0;
+      for (let k = -r; k <= r; k++) a += tmp[Math.min(h - 1, Math.max(0, k)) * w + x];
+      for (let y = 0; y < h; y++) { d[y * w + x] = a / n; a += tmp[Math.min(h - 1, y + r + 1) * w + x] - tmp[Math.max(0, y - r) * w + x]; }
+    }
+  }
+  uploadMdb(); drawGL(); mdbCommit();
+}
+function setMdbMode(m) {
+  mdbMode = mdbMode === m ? null : m;
+  document.querySelectorAll('#mdbTools button').forEach(b => b.classList.toggle('on', b.dataset.mdb === mdbMode));
+  if (mdbMode) brushOffAll('mdb');
+  wrap.classList.toggle('heal', !!mdbMode || healMode || !!liqMode || !!beMode);
+  if (!mdbMode && !liqMode && !beMode && !healMode) brushEl.style.display = 'none';
+}
+document.querySelectorAll('#mdbTools button').forEach(b => b.addEventListener('click', () => setMdbMode(b.dataset.mdb)));
+$('#mdbClear').addEventListener('click', clearMdb);
+$('#mdbFeatherBtn').addEventListener('click', mdbFeather);
+$('#mdbShow').addEventListener('change', () => { S.mdbShow = $('#mdbShow').checked; drawGL(); });
 // ----- Cọ vùng (da cơ thể, má hồng): bôi thêm / bôi bớt, lưu riêng từng ảnh ở độ phân giải phân tích -----
 const BT = {
-  body: { edit: 'bodyEdit', ver: 'beVer', store: 'beStore', size: '#beSize', soft: '#beSoft', btn: '#beTools [data-be]', attr: 'be', vm: 'body', flow: 0.6 },
-  blush: { edit: 'blushEdit', ver: 'blVer', store: 'blStore', size: '#blSize', soft: '#blSoft', btn: '#blTools [data-bl]', attr: 'bl', vm: 'blush', flow: 0.3 },
-  cloth: { edit: 'clothEdit', ver: 'clVer', store: 'clStore', size: '#clSize', soft: '#clSoft', btn: '#clTools [data-cl]', attr: 'cl', vm: 'cloth', flow: 0.5 }
+  body: { edit: 'bodyEdit', ver: 'beVer', store: 'beStore', size: '#beSize', soft: '#beSoft', flowEl: '#beFlow', btn: '#beTools [data-be]', attr: 'be', vm: 'body', flow: 0.6 },
+  blush: { edit: 'blushEdit', ver: 'blVer', store: 'blStore', size: '#blSize', soft: '#blSoft', flowEl: '#blFlow', btn: '#blTools [data-bl]', attr: 'bl', vm: 'blush', flow: 0.3 },
+  cloth: { edit: 'clothEdit', ver: 'clVer', store: 'clStore', size: '#clSize', soft: '#clSoft', flowEl: '#clFlow', btn: '#clTools [data-cl]', attr: 'cl', vm: 'cloth', flow: 0.5 }
 };
 let beMode = null, beTarget = 'body', beDrag = null, beVmPrev = 'none', beBox = null, beRaf = 0;
 const beR = () => Math.max(2, (+$(BT[beTarget].size).value / 100) * Math.max(S.GW, S.GH) * 0.03);
@@ -3454,7 +3569,7 @@ function beStep(x, y) {
     let w = 1; if (d > inner) { const t = (d - inner) / (1 - inner); w = 1 - t * t * (3 - 2 * t); }
     if (edge) { const dc = Math.hypot(R[i] - sd[0], G[i] - sd[1], Bl[i] - sd[2]); w *= Math.max(0, Math.min(1, 1.5 - dc / 0.12)); }
     if (w <= 0.003) continue;
-    const t = sign * 127, v = E[i] + (t - E[i]) * Math.min(1, w * B.flow);
+    const t = sign * 127, v = E[i] + (t - E[i]) * Math.min(1, w * B.flow * Math.pow(2, (+$(B.flowEl).value - 50) / 25));
     E[i] = Math.max(-127, Math.min(127, Math.round(v)));
   }
   beBox = beBox ? [Math.min(beBox[0], x0), Math.min(beBox[1], y0), Math.max(beBox[2], x1), Math.max(beBox[3], y1)] : [x0, y0, x1, y1];
@@ -3491,6 +3606,7 @@ function brushOffAll(except) {
   if (except !== 'heal' && healMode) $('#healBtn').click();
   if (except !== 'liq' && liqMode) setLiqMode(liqMode);
   if (except !== 'be' && beMode) setBeMode(beTarget, beMode);
+  if (except !== 'mdb' && mdbMode) setMdbMode(mdbMode);
 }
 async function setBeMode(target, m) {
   const was = beMode, wasT = beTarget;
@@ -3507,7 +3623,7 @@ async function setBeMode(target, m) {
     if (target === 'blush' && beMode === 'add' && +$('#blushAmt').value === 0) { $('#blushAmt').value = 40; syncOutputs(); mkTouched(); dirtyLocal = true; }
   } else {
     setViewMode(beVmPrev);
-    if (!healMode && !liqMode) { wrap.classList.remove('heal'); brushEl.style.display = 'none'; }
+    if (!healMode && !liqMode && !mdbMode) { wrap.classList.remove('heal'); brushEl.style.display = 'none'; }
   }
 }
 for (const t of ['body', 'blush', 'cloth']) document.querySelectorAll(BT[t].btn).forEach(b => b.addEventListener('click', () => setBeMode(t, b.dataset[BT[t].attr])));
@@ -3520,18 +3636,20 @@ $('#blushAuto').addEventListener('change', () => { applyBlushEdit(); computeOver
 function setLiqMode(m) {
   liqMode = liqMode === m ? null : m;
   if (liqMode && beMode) setBeMode(beTarget, beMode);
+  if (liqMode && mdbMode) setMdbMode(mdbMode);
   document.querySelectorAll('#liqTools button').forEach(b => b.classList.toggle('on', b.dataset.liq === liqMode));
   if (liqMode && healMode) $('#healBtn').click();
-  wrap.classList.toggle('heal', !!liqMode || healMode || !!beMode);
-  if (!liqMode && !beMode && !healMode) brushEl.style.display = 'none';
+  wrap.classList.toggle('heal', !!liqMode || healMode || !!beMode || !!mdbMode);
+  if (!liqMode && !beMode && !healMode && !mdbMode) brushEl.style.display = 'none';
 }
 document.querySelectorAll('#liqTools button').forEach(b => b.addEventListener('click', () => setLiqMode(b.dataset.liq)));
 $('#liqClear').addEventListener('click', clearLiquify);
 function showBrush(e) {
-  if ((!healMode && !liqMode && !beMode) || !S.GW || spaceDown) { brushEl.style.display = 'none'; return; }
+  if ((!healMode && !liqMode && !beMode && !mdbMode) || !S.GW || spaceDown) { brushEl.style.display = 'none'; return; }
   const wr = wrap.getBoundingClientRect(), rect = $('#view').getBoundingClientRect();
-  const dpx = (beMode ? beR() : liqMode ? liqR() : brushR()) * 2 * rect.width / S.GW;
+  const dpx = (mdbMode ? mdbR() : beMode ? beR() : liqMode ? liqR() : brushR()) * 2 * rect.width / S.GW;
   Object.assign(brushEl.style, { display: 'block', left: (e.clientX - wr.left) + 'px', top: (e.clientY - wr.top) + 'px', width: dpx + 'px', height: dpx + 'px' });
+  brushEl.style.background = mdbMode ? 'radial-gradient(circle closest-side, rgba(255,255,255,.28) ' + Math.round((1 - +$('#mdbSoft').value / 100) * 100) + '%, rgba(255,255,255,0) 100%)' : '';
 }
 function paintDot(e, last) {
   const wr = paint.wr, d = dpr(), rect = paint.rect;
@@ -3549,6 +3667,11 @@ wrap.addEventListener('pointerdown', e => {
   if (beMode && e.button === 0 && !spaceDown) {
     if (!S.R) return;
     const [x, y] = screenToImg(e); beDrag = { x, y, seed: beSeed(x, y) }; beStep(x, y);
+    wrap.setPointerCapture(e.pointerId); return;
+  }
+  if (mdbMode && e.button === 0 && !spaceDown) {
+    mdbDrag = { ws: buildWarps(readParams(), S.GW / S.W), last: null };
+    const q = mdbPt(e); mdbDrag.last = q; mdbStamp(q[0], q[1]);
     wrap.setPointerCapture(e.pointerId); return;
   }
   if (liqMode && e.button === 0 && !spaceDown) {
@@ -3579,6 +3702,14 @@ wrap.addEventListener('pointermove', e => {
     }
     return;
   }
+  if (mdbDrag) {
+    for (const ev of (e.getCoalescedEvents ? e.getCoalescedEvents() : null) || [e]) {
+      const q = mdbPt(ev), st = Math.max(1, mdbR() * MDB_SP); let [lx, ly] = mdbDrag.last, dx = q[0] - lx, dy = q[1] - ly, d = Math.hypot(dx, dy);
+      while (d >= st) { lx += dx / d * st; ly += dy / d * st; mdbStamp(lx, ly); dx = q[0] - lx; dy = q[1] - ly; d = Math.hypot(dx, dy); }
+      mdbDrag.last = [lx, ly];
+    }
+    return;
+  }
   if (liqDrag) {
     const [x, y] = screenToImg(e), vx = x - liqDrag.x, vy = y - liqDrag.y;
     if (liqMode === 'push') { if (Math.hypot(vx, vy) > 0.5) liqStep(x, y, vx, vy); } else liqStep(x, y, 0, 0);
@@ -3602,13 +3733,14 @@ wrap.addEventListener('pointermove', e => {
 });
 wrap.addEventListener('pointerup', async e => {
   if (beDrag) { beDrag = null; beCommit(); return; }
+  if (mdbDrag) { mdbDrag = null; mdbCommit(); return; }
   if (liqDrag) { liqDrag = null; clearInterval(liqTimer); liqCommit(); return; }
   if (paint) { const st = paint.st; paint = null; await addStroke(st); clearPaint(); return; }
   if (!drag) return;
   const d0 = drag; drag = null; wrap.classList.remove('panning');
   if (d0.review && !d0.moved) toggleCandAt(e);
 });
-wrap.addEventListener('pointercancel', () => { if (beDrag) { beDrag = null; beCommit(); } drag = null; paint = null; if (liqDrag) { liqDrag = null; clearInterval(liqTimer); liqCommit(); } clearPaint(); wrap.classList.remove('panning'); });
+wrap.addEventListener('pointercancel', () => { if (mdbDrag) { mdbDrag = null; mdbCommit(); } if (beDrag) { beDrag = null; beCommit(); } drag = null; paint = null; if (liqDrag) { liqDrag = null; clearInterval(liqTimer); liqCommit(); } clearPaint(); wrap.classList.remove('panning'); });
 /* ---- Pinch-zoom 2 ngón trên màn hình cảm ứng (iPad...) ---- */
 (() => {
   const tp = new Map(); let pinch = null;
@@ -3622,6 +3754,7 @@ wrap.addEventListener('pointercancel', () => { if (beDrag) { beDrag = null; beCo
     tp.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (tp.size === 2) {
       // huỷ thao tác 1 ngón đang dở (kéo/vẽ/chỉnh) rồi chuyển sang pinch
+      if (mdbDrag) { mdbDrag = null; mdbCommit(); }
       if (beDrag) { beDrag = null; beCommit(); }
       if (liqDrag) { liqDrag = null; clearInterval(liqTimer); liqCommit(); }
       if (paint) { paint = null; clearPaint(); }
@@ -3671,11 +3804,11 @@ window.addEventListener('keyup', e => {
   if (e.code === 'Space') { spaceDown = false; wrap.classList.remove('space'); }
 });
 window.addEventListener('keydown', e => {
-  if (e.target.tagName === 'INPUT' || (!healMode && !liqMode && !beMode)) return;
+  if (e.target.tagName === 'INPUT' || (!healMode && !liqMode && !beMode && !mdbMode)) return;
   if (e.code === 'Space') { spaceDown = true; wrap.classList.add('space'); brushEl.style.display = 'none'; e.preventDefault(); }
   if (e.key === '[' || e.key === ']') {
-    const el = beMode ? $(BT[beTarget].size) : liqMode ? $('#liqSize') : $('#healSize'), v = +el.value; el.value = Math.max(+el.min, Math.min(+el.max, e.key === ']' ? Math.max(v + 1, v * 1.15) : Math.min(v - 1, v / 1.15)));
-    syncOutputs(); brushEl.style.width = brushEl.style.height = ((beMode ? beR() : liqMode ? liqR() : brushR()) * 2 * $('#view').getBoundingClientRect().width / S.GW) + 'px';
+    const el = mdbMode ? $('#mdbSize') : beMode ? $(BT[beTarget].size) : liqMode ? $('#liqSize') : $('#healSize'), v = +el.value; el.value = Math.max(+el.min, Math.min(+el.max, e.key === ']' ? Math.max(v + 1, v * 1.15) : Math.min(v - 1, v / 1.15)));
+    syncOutputs(); brushEl.style.width = brushEl.style.height = ((mdbMode ? mdbR() : beMode ? beR() : liqMode ? liqR() : brushR()) * 2 * $('#view').getBoundingClientRect().width / S.GW) + 'px';
   }
 });
 const handle = $('#splitHandle');
@@ -4073,8 +4206,9 @@ $('#healBtn').addEventListener('click', () => {
   $('#healBtn').textContent = healMode ? 'Đang dùng cọ (bấm để tắt)' : 'Bật cọ xóa mụn';
   if (healMode && liqMode) setLiqMode(liqMode);
   if (healMode && beMode) setBeMode(beTarget, beMode);
+  if (healMode && mdbMode) setMdbMode(mdbMode);
   wrap.classList.toggle('heal', healMode || !!liqMode);
-  if (!healMode && !liqMode && !beMode) brushEl.style.display = 'none';
+  if (!healMode && !liqMode && !beMode && !mdbMode) brushEl.style.display = 'none';
 });
 $('#undoBtn').addEventListener('click', async () => { S.spots.pop(); updateSpotBtns(); await rebuildHeal(); commitHist(); });
 $('#clearBtn').addEventListener('click', async () => { S.spots = []; updateSpotBtns(); await rebuildHeal(); commitHist(); });
@@ -4106,6 +4240,11 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
 (() => {
   const mq = matchMedia('(max-width:860px)'), aside = document.querySelector('aside');
   const grab = document.createElement('div'); grab.id = 'sheetGrab'; grab.innerHTML = '<i></i>'; aside.prepend(grab);
+  // chiều cao thanh dưới (nút Xuất/Lưu + tab) → chừa chỗ để không che thanh zoom
+  const foot = document.getElementById('foot'), tabsEl = document.querySelector('#tabs');
+  const fitAside = () => document.documentElement.style.setProperty('--asideH', ((foot ? foot.offsetHeight : 0) + tabsEl.offsetHeight) + 'px');
+  fitAside(); addEventListener('resize', fitAside);
+  if (window.ResizeObserver) { const ro = new ResizeObserver(fitAside); ro.observe(tabsEl); if (foot) ro.observe(foot); }
   const setSheet = o => document.body.classList.toggle('sheet-open', o);
   grab.addEventListener('click', () => setSheet(false));
   document.querySelector('#tabs').addEventListener('click', e => {
@@ -4140,7 +4279,7 @@ function resetTab(t) {
   for (const k of TAB_KEYS[t]) $('#' + k).value = DEFAULTS[k];
   if (t === 'retouch' && S.item && S.item.bodyEdit) $('#beClear').click();
   if (t === 'retouch' && S.item && S.item.clothEdit) $('#clClear').click();
-  if (t === 'light') resetCurves();
+  if (t === 'light') { resetCurves(); clearMdb(); }
   if (t === 'retouch') { const had = S.spots.length; S.spots = []; updateSpotBtns(); setSkinTone(0, true); if (had) rebuildHeal(); }
   if (t === 'makeup') { setLip(0, true); setMk('blush', 0, true); setMk('shadow', 0, true); mkFaces = {}; mkAll = null; mkSel = -1; renderMkFaces(); }
   if (t === 'shape') clearLiquify();
@@ -4290,7 +4429,8 @@ function sessPack() {
   saveCurrent();
   return { v: 1, cur, t: Date.now(), items: items.map(it => {
     const r = { file: it.file, name: it.name, params: it.params, edited: !!it.edited,
-      spots: (it.spots || []).map(st => ({ st, patch: aiPatch.get(st) || null })), liq: it.liq || null, liqVer: it.liqVer || 0 };
+      spots: (it.spots || []).map(st => ({ st, patch: aiPatch.get(st) || null })), liq: it.liq || null, liqVer: it.liqVer || 0,
+      mdb: it.mdb ? { w: it.mdb.w, h: it.mdb.h, q: mdbQuant(it.mdb.d) } : null, mdbVer: it.mdbVer || 0 };
     for (const [k, ver] of SESS_EDITS) { r[k] = it[k] || null; r[ver] = it[ver] || 0; }
     return r;
   }) };
@@ -4310,6 +4450,7 @@ async function sessRestore(rec) {
     const it = { file: r.file, name: r.name, params: r.params, spots: [], autoPending: false, edited: !!r.edited };
     for (const s of r.spots || []) { it.spots.push(s.st); if (s.patch) aiPatch.set(s.st, s.patch); }
     if (r.liq) { it.liq = r.liq; it.liqVer = r.liqVer || 1; it.liqStore = new Map([[it.liqVer, r.liq.d.slice()]]); }
+    if (r.mdb) { it.mdb = { w: r.mdb.w, h: r.mdb.h, d: mdbDequant(r.mdb.q) }; it.mdbVer = r.mdbVer || 1; it.mdbStore = new Map([[it.mdbVer, r.mdb.q]]); }
     for (const [k, ver, store] of SESS_EDITS) if (r[k]) { it[k] = r[k]; it[ver] = r[ver] || 1; it[store] = new Map([[it[ver], r[k].slice()]]); }
     items.push(it); makeThumb(it).then(renderStrip);
   }
