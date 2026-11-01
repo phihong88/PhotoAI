@@ -3420,12 +3420,17 @@ function applyView() {
   const v = $('#view');
   // Khi xem nhỏ hơn 100%: card đồ họa vẽ đúng kích thước đang xem (thu nhỏ mượt, không gắt);
   // khi zoom từ 100% trở lên: vẽ đủ điểm ảnh gốc
-  const rs = V.s >= 1 ? 1 : Math.min(1, Math.round(V.s * 200) / 200 || 0.005);
+  let rs = V.s >= 1 ? 1 : Math.min(1, Math.round(V.s * 200) / 200 || 0.005);
+  const nowT = performance.now(), fast = nowT - (S.lastView || 0) < 120;   // đang zoom liên tục (pinch, lăn chuột)
+  S.lastView = nowT;
   if (S.rs !== rs && S.GW) {
-    S.rs = rs;
-    const [bw, bh] = setCanvasSize(Math.max(1, Math.round(S.GW * rs)), Math.max(1, Math.round(S.GH * rs)));
-    S.bufW = bw; S.bufH = bh;
-    requestRender();
+    if (S.rs && fast) { clearTimeout(S.rsT); S.rsT = setTimeout(applyView, 180); rs = S.rs; }   // giữ nguyên bộ đệm, chỉ co giãn bằng CSS; vẽ lại nét khi dừng tay
+    else {
+      clearTimeout(S.rsT); S.rs = rs;
+      const [bw, bh] = setCanvasSize(Math.max(1, Math.round(S.GW * rs)), Math.max(1, Math.round(S.GH * rs)));
+      S.bufW = bw; S.bufH = bh;
+      requestRender();
+    }
   }
   const k = rs || 1;
   v.style.width = cssW() * k + 'px'; v.style.height = cssH() * k + 'px';
@@ -4365,10 +4370,23 @@ function resetTab(t) {
   syncOutputs(); dirtyLocal = true; dirtyLut = true; markEdited(); requestRender();
 }
 // Bấm đúp vào thanh kéo: về mức gốc
-document.querySelectorAll('.row input[type=range]').forEach(inp => inp.addEventListener('dblclick', () => {
-  inp.value = DEFAULTS[inp.id] ?? (TOOL_IDS.includes(inp.id) ? inp.defaultValue : 0);
-  inp.dispatchEvent(new Event('input'));
-}));
+document.querySelectorAll('.row input[type=range]').forEach(inp => {
+  const reset = () => {
+    inp.value = DEFAULTS[inp.id] ?? (TOOL_IDS.includes(inp.id) ? inp.defaultValue : 0);
+    inp.dispatchEvent(new Event('input')); inp.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  inp.addEventListener('dblclick', reset);
+  // Màn cảm ứng (iPad, điện thoại) không có sự kiện nhấn đúp ổn định: tự nhận biết 2 lần chạm nhanh, cùng vị trí
+  let down = null, last = { t: 0, x: 0, y: 0 };
+  inp.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') down = { t: e.timeStamp, x: e.clientX, y: e.clientY }; });
+  inp.addEventListener('pointerup', e => {
+    if (e.pointerType === 'mouse' || !down) return;
+    const tap = e.timeStamp - down.t < 400 && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 10; down = null;
+    if (!tap) { last.t = 0; return; }
+    if (e.timeStamp - last.t < 450 && Math.hypot(e.clientX - last.x, e.clientY - last.y) < 40) { last.t = 0; reset(); }
+    else last = { t: e.timeStamp, x: e.clientX, y: e.clientY };
+  });
+});
 // Icon ↺ nhỏ ở góc phải mỗi nhóm
 document.querySelectorAll('.pane .sec').forEach(sec => {
   const ranges = [...sec.querySelectorAll('input[type=range]')].filter(x => !TOOL_IDS.includes(x.id));
